@@ -25,7 +25,6 @@ class CustomerExperienceModel:
     def load_and_preprocess_data(self):
         self.df = pd.read_csv(self.data_path)
 
-        # Normalizar las variables
         self.df['Norm_Delivery_Time'] = ((self.df['Delivery_Time_min'] - self.df['Delivery_Time_min'].min()) /
                                          (self.df['Delivery_Time_min'].max() - self.df['Delivery_Time_min'].min()))
         self.df['Norm_Distance'] = ((self.df['Distance_km'] - self.df['Distance_km'].min()) /
@@ -35,7 +34,7 @@ class CustomerExperienceModel:
                                               (self.df['Courier_Experience_yrs'].max() -
                                                self.df['Courier_Experience_yrs'].min()))
 
-        # Ponderaciones y clima
+        # Weightings and climate
         weather_score = {'Clear': 1.0, 'Windy': 0.8, 'Foggy': 0.6, 'Rainy': 0.4}
         self.df['Weather_Score'] = self.df['Weather'].map(weather_score)
 
@@ -43,7 +42,7 @@ class CustomerExperienceModel:
         distance_weight = -0.3
         experience_weight = 0.4
 
-        # Calcular puntuación de experiencia
+        # Calculate experience score
         self.df['Customer_Experience'] = (
             delivery_weight * self.df['Norm_Delivery_Time'] +
             distance_weight * self.df['Norm_Distance'] +
@@ -51,7 +50,6 @@ class CustomerExperienceModel:
             self.df['Weather_Score']
         )
 
-        # Escalar entre 1 y 10
         self.df['Customer_Experience'] = (
             (self.df['Customer_Experience'] - self.df['Customer_Experience'].min()) /
             (self.df['Customer_Experience'].max() - self.df['Customer_Experience'].min()) * 9 + 1
@@ -61,7 +59,6 @@ class CustomerExperienceModel:
         x = self.df[['Delivery_Time_min', 'Distance_km', 'Courier_Experience_yrs', 'Weather_Score']]
         y = self.df['Customer_Experience']
 
-        # Limpiar valores faltantes
         x = x.fillna(x.median())
         data_cleaned = pd.concat([x, y], axis=1).dropna()
         x = data_cleaned.iloc[:, :-1]
@@ -84,7 +81,6 @@ class CustomerExperienceModel:
         feature_importance_df = (pd.DataFrame({'Feature': features, 'Importance': importances}).sort_values
                                  (by='Importance', ascending=False))
 
-        # Visualizar la importancia de características
         plt.figure(figsize=(8, 5))
         sns.barplot(data=feature_importance_df, x='Importance', y='Feature', palette='viridis')
         plt.title('Importancia de Características')
@@ -129,4 +125,5 @@ if __name__ == "__main__":
         'Weather_Score': [1.0, 0.8, 0.4]
     })
     predictions = model.predict_new_data(input_data=new_data)
+    predictions.to_excel(os.path.join(data_dir, 'predictions.xlsx'))
     print(predictions)
